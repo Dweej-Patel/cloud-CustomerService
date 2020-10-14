@@ -23,6 +23,7 @@ sys.path.append(cwd)
 print("*** PYHTHONPATH = " + str(sys.path) + "***")
 
 import logging
+import dbsvc as db
 from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG)
@@ -242,6 +243,125 @@ def demo(parameter):
     rsp = Response(json.dumps(msg), status=200, content_type="application/json")
     return rsp
 
+@application.route("/Users", methods=["GET"])
+@application.route("/Users/<parameter>", methods=["GET"])
+def getUsers(parameter=""):
+
+    if parameter:
+        sql = f"SELECT * from UserService.Users LIMIT {parameter};"
+    else:
+        sql = f"SELECT * from UserService.Users;"
+    msg = db.getDbConnection(sql)
+    print(msg)
+    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+
+    return rsp
+
+@application.route("/Users", methods=["POST"])
+def addUsers():
+
+    body = json.loads(request.data.decode())
+    names = [x for x, y in body.items()]
+    values = [y for x, y in body.items()]
+    values = '", "'.join(map(str, values))
+    names = ', '.join(map(str, names))
+    sql = f'INSERT INTO UserService.Users ({names}) values ("{values}");'
+    print(sql)
+    msg = db.getDbConnection(sql)
+    print(msg)
+    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+
+    return rsp
+
+@application.route("/Users/id/<id>", methods=["DELETE"])
+def deleteUsers(id):
+
+    sql = f'DELETE from UserService.Users WHERE id={id};'
+    print(sql)
+    msg = db.getDbConnection(sql)
+    print(msg)
+    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+
+    return rsp
+
+@application.route("/Users/id/<id>", methods=["PUT"])
+def updateUsers(id):
+
+    body = json.loads(request.data.decode())
+    names = [x for x, y in body.items()]
+    values = [y for x, y in body.items()]
+    stringy = ''
+    for i, name in enumerate(names):
+        stringy += f'{name} = "{values[i]}", '
+    stringy = stringy[:-2]
+    print(stringy)
+    sql = f'UPDATE UserService.Users SET {stringy} WHERE id={id};'
+    print(sql)
+    msg = db.getDbConnection(sql)
+    print(msg)
+    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+
+    return rsp
+
+@application.route("/Address", methods=["GET"])
+@application.route("/Address/<parameter>", methods=["GET"])
+def getAddresses(parameter=""):
+
+    if parameter:
+        sql = f"SELECT * from UserService.Address LIMIT {parameter};"
+    else:
+        sql = f"SELECT * from UserService.Address;"
+    msg = db.getDbConnection(sql)
+    print(msg)
+    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+
+    return rsp
+
+@application.route("/Address", methods=["POST"])
+def addAddresses():
+
+    body = json.loads(request.data.decode())
+    names = [x for x, y in body.items()]
+    values = [y for x, y in body.items()]
+    values = '", "'.join(map(str, values))
+    names = ', '.join(map(str, names))
+    sql = f'INSERT INTO UserService.Address ({names}) values ("{values}");'
+    print(sql)
+    msg = db.getDbConnection(sql)
+    print(msg)
+    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+
+    return rsp
+@application.route("/Address/id/<id>", methods=["DELETE"])
+def deleteAddress(id):
+
+    sql = f'DELETE from UserService.Address WHERE id={id};'
+    print(sql)
+    msg = db.getDbConnection(sql)
+    print(msg)
+    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+
+    return rsp
+
+@application.route("/Address/id/<id>", methods=["PUT"])
+def updateAddress(id):
+
+    body = json.loads(request.data.decode())
+    names = [x for x, y in body.items()]
+    values = [y for x, y in body.items()]
+    stringy = ''
+    for i, name in enumerate(names):
+        stringy += f'{name} = "{values[i]}", '
+    stringy = stringy[:-2]
+    print(stringy)
+    sql = f'UPDATE UserService.Address SET {stringy} WHERE id={id};'
+    print(sql)
+    msg = db.getDbConnection(sql)
+    print(msg)
+    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+
+    return rsp
+
 @application.route("/boo", methods=["GET"])
 def boo():
     rsp = Response("Hoo", status=200, content_type="text/plain")
@@ -281,4 +401,4 @@ if __name__ == "__main__":
     # Setting debug to True enables debug output. This line should be
     # removed before deploying a production app.
 
-    application.run(host='0.0.0.0',port=8000)
+    application.run(host='0.0.0.0', port=8000)
