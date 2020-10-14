@@ -9,12 +9,18 @@ c_info = {
     "user": "admin",
     "password": pw,
     "cursorclass": pymysql.cursors.DictCursor,
+    "autocommit": True,
 }
 
 conn = pymysql.connect(**c_info)
 cur = conn.cursor()
-res = cur.execute("show databases;")
-res = cur.fetchall()
+
+
+def getDbConnection(sql):
+    res = cur.execute(sql)
+    res = cur.fetchall()
+    return res
+
 
 
 
