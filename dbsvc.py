@@ -4,7 +4,8 @@ import os
 pw = os.environ['dbuser']
 
 c_info = {
-    "host": "ec2-3-237-172-82.compute-1.amazonaws.com",
+    "host": "userservicesdb.c5wltorex9gc.us-east-1.rds.amazonaws.com",
+    "port": 3306,
     "user": "admin",
     "password": pw,
     "cursorclass": pymysql.cursors.DictCursor,
@@ -12,5 +13,8 @@ c_info = {
 
 conn = pymysql.connect(**c_info)
 cur = conn.cursor()
-res = cur.execute("show database;")
+res = cur.execute("show databases;")
 res = cur.fetchall()
+
+
+
