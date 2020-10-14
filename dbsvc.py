@@ -15,4 +15,6 @@ conn = pymysql.connect(**c_info)
 cur = conn.cursor()
 res = cur.execute("show databases;")
 res = cur.fetchall()
-print(res)
+
+
+
