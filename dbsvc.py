@@ -2,9 +2,10 @@ import pymysql
 import os
 
 pw = os.environ['dbuser']
+host = os.environ['dbhost']
 
 c_info = {
-    "host": "userservicesdb.c5wltorex9gc.us-east-1.rds.amazonaws.com",
+    "host": host,
     "port": 3306,
     "user": "admin",
     "password": pw,
