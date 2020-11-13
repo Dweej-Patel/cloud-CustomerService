@@ -9,7 +9,7 @@ import json
 # The application should get the log level out of the context. We will change later.
 #
 
-import os
+import hashlib, binascii, os
 import sys
 import platform
 import socket
@@ -29,6 +29,8 @@ from datetime import datetime
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
+
+import jwt
 
 
 # Create the application server main class instance and call it 'application'
@@ -248,9 +250,9 @@ def demo(parameter):
 def getUsers(parameter=""):
 
     if parameter:
-        sql = f"SELECT * from UserService.Users LIMIT {parameter};"
+        sql = f"SELECT * from CatalogService.Users LIMIT {parameter};"
     else:
-        sql = f"SELECT * from UserService.Users;"
+        sql = f"SELECT * from CatalogService.Users;"
     msg = db.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
@@ -258,14 +260,14 @@ def getUsers(parameter=""):
     return rsp
 
 @application.route("/Users", methods=["POST"])
-def addUsers():
-
+def addUsers(hashed_password):
     body = json.loads(request.data.decode())
+    body['hashed_Password'] = hashed_password
     names = [x for x, y in body.items()]
     values = [y for x, y in body.items()]
     values = '", "'.join(map(str, values))
     names = ', '.join(map(str, names))
-    sql = f'INSERT INTO UserService.Users ({names}) values ("{values}");'
+    sql = f'INSERT INTO CatalogService.Users ({names}) values ("{values}");'
     print(sql)
     msg = db.getDbConnection(sql)
     print(msg)
@@ -276,7 +278,7 @@ def addUsers():
 @application.route("/Users/id/<id>", methods=["DELETE"])
 def deleteUsers(id):
 
-    sql = f'DELETE from UserService.Users WHERE id={id};'
+    sql = f'DELETE from CatalogService.Users WHERE id={id};'
     print(sql)
     msg = db.getDbConnection(sql)
     print(msg)
@@ -295,7 +297,7 @@ def updateUsers(id):
         stringy += f'{name} = "{values[i]}", '
     stringy = stringy[:-2]
     print(stringy)
-    sql = f'UPDATE UserService.Users SET {stringy} WHERE id={id};'
+    sql = f'UPDATE CatalogService.Users SET {stringy} WHERE id={id};'
     print(sql)
     msg = db.getDbConnection(sql)
     print(msg)
@@ -308,9 +310,9 @@ def updateUsers(id):
 def getAddresses(parameter=""):
 
     if parameter:
-        sql = f"SELECT * from UserService.Address LIMIT {parameter};"
+        sql = f"SELECT * from CatalogService.Address LIMIT {parameter};"
     else:
-        sql = f"SELECT * from UserService.Address;"
+        sql = f"SELECT * from CatalogService.Address;"
     msg = db.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
@@ -325,7 +327,7 @@ def addAddresses():
     values = [y for x, y in body.items()]
     values = '", "'.join(map(str, values))
     names = ', '.join(map(str, names))
-    sql = f'INSERT INTO UserService.Address ({names}) values ("{values}");'
+    sql = f'INSERT INTO CatalogService.Address ({names}) values ("{values}");'
     print(sql)
     msg = db.getDbConnection(sql)
     print(msg)
@@ -335,7 +337,7 @@ def addAddresses():
 @application.route("/Address/id/<id>", methods=["DELETE"])
 def deleteAddress(id):
 
-    sql = f'DELETE from UserService.Address WHERE id={id};'
+    sql = f'DELETE from CatalogService.Address WHERE id={id};'
     print(sql)
     msg = db.getDbConnection(sql)
     print(msg)
@@ -354,12 +356,19 @@ def updateAddress(id):
         stringy += f'{name} = "{values[i]}", '
     stringy = stringy[:-2]
     print(stringy)
-    sql = f'UPDATE UserService.Address SET {stringy} WHERE id={id};'
+    sql = f'UPDATE CatalogService.Address SET {stringy} WHERE id={id};'
     print(sql)
     msg = db.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
+    return rsp
+
+@application.route("/Registrations", methods=["POST"])
+def registerUser():
+    body = json.loads(request.data.decode())
+    hashed_password = jwt.encode({'password': body['hashed_Password']}, 'secret', algorithm='HS256')
+    rsp = addUsers(hashed_password)
     return rsp
 
 @application.route("/boo", methods=["GET"])
