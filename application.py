@@ -380,21 +380,22 @@ def registerUser():
 
 @application.route("/logins", methods=["POST"])
 def login():
-    body = json.loads(request.data.decode())
-    password = body['hashed_Password']
-    hashed_password = hash(password)
-    sql = f'SELECT hashed_Password from CatalogService.Users WHERE id={body["id"]};'
-    msg = db.getDbConnection(sql)
-    stored_password = msg[0]['hashed_Password']
-    print(hashed_password, stored_password)
-    if hashed_password == stored_password:
-        rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
-        token = encode_token(body['email'], 'user')
-        rsp.headers['token'] = token
-        return rsp
-    else:
-        rsp = Response(json.dumps("", default=str), status=401, content_type="application/json")
-        return rsp
+	body = json.loads(request.data.decode())
+	email = body['email']
+	password = body['hashed_Password']
+	hashed_password = hash(password)
+	sql = f'SELECT hashed_Password from CatalogService.Users WHERE email="{email}";'
+	msg = db.getDbConnection(sql)
+	stored_password = msg[0]['hashed_Password']
+	print(hashed_password, stored_password)
+	if hashed_password == stored_password:
+	    rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
+	    token = encode_token(body['email'], 'user')
+	    rsp.headers['token'] = token
+	    return rsp
+	else:
+	    rsp = Response(json.dumps("", default=str), status=401, content_type="application/json")
+	    return rsp
 
 def hash(password):
     res = hashlib.pbkdf2_hmac(
@@ -403,7 +404,7 @@ def hash(password):
         salt, # Provide the salt
         100000 # It is recommended to use at least 100,000 iterations of SHA-256 
     )
-    return res.decode()
+    return res
 
 def encode_token(email, role):
     try:
@@ -423,14 +424,15 @@ def encode_token(email, role):
 
 def decode_token(auth_token):
     try:
-        payload = jwt.decode(auth_token, Env.MOOVE_PRIVATE_KEY())
+        payload = jwt.decode(auth_token, jwt_key)
         # print(payload)
-        return payload['googleId'], payload['userType']
+        return payload['email'], payload['role']
     except jwt.ExpiredSignatureError:
         return 'Signature expired. Please log in again.', None
     except jwt.InvalidTokenError:
         return 'Invalid token. Please log in again.', None	
 	
+
 
 @application.route("/boo", methods=["GET"])
 def boo():
