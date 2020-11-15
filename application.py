@@ -432,7 +432,6 @@ def decode_token(auth_token):
         return 'Invalid token. Please log in again.', None	
 	
 
-
 @application.route("/boo", methods=["GET"])
 def boo():
     rsp = Response("Hoo", status=200, content_type="text/plain")
