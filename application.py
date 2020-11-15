@@ -403,7 +403,7 @@ def hash(password):
         salt, # Provide the salt
         100000 # It is recommended to use at least 100,000 iterations of SHA-256 
     )
-    return res.decode()
+    return res
 
 def encode_token(email, role):
     try:
@@ -431,6 +431,7 @@ def decode_token(auth_token):
     except jwt.InvalidTokenError:
         return 'Invalid token. Please log in again.', None	
 	
+
 
 @application.route("/boo", methods=["GET"])
 def boo():
