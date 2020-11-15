@@ -372,6 +372,7 @@ def registerUser():
     body = json.loads(request.data.decode())
     password = body['hashed_Password']
     hashed_password = hash(password)
+    print(hashed_password)
     rsp = addUsers(hashed_password)
     token = encode_token(body['email'], 'user')
     rsp.headers['token'] = token
@@ -385,8 +386,8 @@ def login():
     sql = f'SELECT hashed_Password from CatalogService.Users WHERE id={body["id"]};'
     msg = db.getDbConnection(sql)
     stored_password = msg[0]['hashed_Password']
-    print(stored_password)
-    if password == stored_password:
+    print(hashed_password, stored_password)
+    if hashed_password == stored_password:
         rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
         token = encode_token(body['email'], 'user')
         rsp.headers['token'] = token
@@ -402,7 +403,7 @@ def hash(password):
         salt, # Provide the salt
         100000 # It is recommended to use at least 100,000 iterations of SHA-256 
     )
-    return res
+    return res.decode()
 
 def encode_token(email, role):
     try:
