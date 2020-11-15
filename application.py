@@ -15,16 +15,19 @@ import platform
 import socket
 
 from flask import Flask, Response
-from flask import request
+from flask import request, jsonify
+import hashlib
 
 cwd = os.getcwd()
 sys.path.append(cwd)
+jwt_key = os.environ['jwt_key']
+salt = os.environ['salt'].encode('utf-8')
 
 print("*** PYHTHONPATH = " + str(sys.path) + "***")
 
 import logging
 import dbsvc as db
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
@@ -367,9 +370,67 @@ def updateAddress(id):
 @application.route("/Registrations", methods=["POST"])
 def registerUser():
     body = json.loads(request.data.decode())
-    hashed_password = jwt.encode({'password': body['hashed_Password']}, 'secret', algorithm='HS256')
+    password = body['hashed_Password']
+    hashed_password = hash(password)
     rsp = addUsers(hashed_password)
+    token = encode_token(body['email'], 'user')
+    rsp.headers['token'] = token
     return rsp
+
+@application.route("/logins", methods=["POST"])
+def login():
+    body = json.loads(request.data.decode())
+    password = body['hashed_Password']
+    hashed_password = hash(password)
+    sql = f'SELECT hashed_Password from CatalogService.Users WHERE id={body["id"]};'
+    msg = db.getDbConnection(sql)
+    stored_password = msg[0]['hashed_Password']
+    print(stored_password)
+    if password == stored_password:
+        rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
+        token = encode_token(body['email'], 'user')
+        rsp.headers['token'] = token
+        return rsp
+    else:
+        rsp = Response(json.dumps("", default=str), status=401, content_type="application/json")
+        return rsp
+
+def hash(password):
+    res = hashlib.pbkdf2_hmac(
+        'sha256', # The hash digest algorithm for HMAC
+        password.encode('utf-8'), # Convert the password to bytes
+        salt, # Provide the salt
+        100000 # It is recommended to use at least 100,000 iterations of SHA-256 
+    )
+    return res
+
+def encode_token(email, role):
+    try:
+        payload = {
+            'exp': datetime.utcnow() + timedelta(days=7, seconds=0),
+            'iat': datetime.utcnow(),
+            'email': email,
+            'role': role 
+        }
+        return jwt.encode(
+            payload,
+            jwt_key,
+            algorithm='HS256'
+            )
+    except Exception as e:
+        return e
+
+def decode_token(auth_token):
+    try:
+        payload = jwt.decode(auth_token, Env.MOOVE_PRIVATE_KEY())
+        # print(payload)
+        return payload['googleId'], payload['userType']
+    except jwt.ExpiredSignatureError:
+        return 'Signature expired. Please log in again.', None
+    except jwt.InvalidTokenError:
+        return 'Invalid token. Please log in again.', None	
+	
+
 
 @application.route("/boo", methods=["GET"])
 def boo():
