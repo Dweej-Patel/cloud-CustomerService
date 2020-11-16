@@ -1,22 +1,23 @@
-# Import functions and objects the microservice needs.
-# - Flask is the top-level application. You implement the application by adding methods to it.
-# - Response enables creating well-formed HTTP/REST responses.
-# - requests enables accessing the elements of an incoming HTTP/REST request.
-#
-import json
+from app import application
 
-# Setup and use the simple, common Python logging framework. Send log messages to the console.
-# The application should get the log level out of the context. We will change later.
-#
+import json
 
 import hashlib, binascii, os
 import sys
 import platform
 import socket
 
-from flask import Flask, Response
+from flask import Response
 from flask import request, jsonify
 import hashlib
+
+from app.models import *
+from app import db
+
+cwd = os.getcwd()
+sys.path.append(cwd)
+jwt_key = os.environ['jwt_key']
+salt = os.environ['salt'].encode('utf-8')
 
 cwd = os.getcwd()
 sys.path.append(cwd)
@@ -26,7 +27,7 @@ salt = os.environ['salt'].encode('utf-8')
 print("*** PYHTHONPATH = " + str(sys.path) + "***")
 
 import logging
-import dbsvc as db
+from app import dbsvc
 from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.DEBUG)
@@ -34,16 +35,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 import jwt
-
-
-# Create the application server main class instance and call it 'application'
-# Specific the path that identifies the static content and where it is.
-application = Flask(__name__,
-                    static_url_path='/static',
-                static_folder='WebSite/static')
-
-
-
 
 # 1. Extract the input information from the requests object.
 # 2. Log the information
@@ -253,10 +244,10 @@ def demo(parameter):
 def getUsers(parameter=""):
 
     if parameter:
-        sql = f"SELECT * from CatalogService.Users LIMIT {parameter};"
+        sql = f"SELECT * from CatalogService.users LIMIT {parameter};"
     else:
-        sql = f"SELECT * from CatalogService.Users;"
-    msg = db.getDbConnection(sql)
+        sql = f"SELECT * from CatalogService.users;"
+    msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
@@ -265,14 +256,14 @@ def getUsers(parameter=""):
 @application.route("/Users", methods=["POST"])
 def addUsers(hashed_password):
     body = json.loads(request.data.decode())
-    body['hashed_Password'] = hashed_password
+    body['password'] = hashed_password
     names = [x for x, y in body.items()]
     values = [y for x, y in body.items()]
     values = '", "'.join(map(str, values))
     names = ', '.join(map(str, names))
-    sql = f'INSERT INTO CatalogService.Users ({names}) values ("{values}");'
+    sql = f'INSERT INTO CatalogService.users ({names}) values ("{values}");'
     print(sql)
-    msg = db.getDbConnection(sql)
+    msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
@@ -281,9 +272,9 @@ def addUsers(hashed_password):
 @application.route("/Users/id/<id>", methods=["DELETE"])
 def deleteUsers(id):
 
-    sql = f'DELETE from CatalogService.Users WHERE id={id};'
+    sql = f'DELETE from CatalogService.users WHERE id={id};'
     print(sql)
-    msg = db.getDbConnection(sql)
+    msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
@@ -300,9 +291,9 @@ def updateUsers(id):
         stringy += f'{name} = "{values[i]}", '
     stringy = stringy[:-2]
     print(stringy)
-    sql = f'UPDATE CatalogService.Users SET {stringy} WHERE id={id};'
+    sql = f'UPDATE CatalogService.users SET {stringy} WHERE id={id};'
     print(sql)
-    msg = db.getDbConnection(sql)
+    msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
@@ -313,10 +304,10 @@ def updateUsers(id):
 def getAddresses(parameter=""):
 
     if parameter:
-        sql = f"SELECT * from CatalogService.Address LIMIT {parameter};"
+        sql = f"SELECT * from CatalogService.addresses LIMIT {parameter};"
     else:
-        sql = f"SELECT * from CatalogService.Address;"
-    msg = db.getDbConnection(sql)
+        sql = f"SELECT * from CatalogService.addresses;"
+    msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
@@ -330,9 +321,9 @@ def addAddresses():
     values = [y for x, y in body.items()]
     values = '", "'.join(map(str, values))
     names = ', '.join(map(str, names))
-    sql = f'INSERT INTO CatalogService.Address ({names}) values ("{values}");'
+    sql = f'INSERT INTO CatalogService.addresses ({names}) values ("{values}");'
     print(sql)
-    msg = db.getDbConnection(sql)
+    msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
@@ -340,9 +331,9 @@ def addAddresses():
 @application.route("/Address/id/<id>", methods=["DELETE"])
 def deleteAddress(id):
 
-    sql = f'DELETE from CatalogService.Address WHERE id={id};'
+    sql = f'DELETE from CatalogService.addresses WHERE id={id};'
     print(sql)
-    msg = db.getDbConnection(sql)
+    msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
@@ -359,9 +350,9 @@ def updateAddress(id):
         stringy += f'{name} = "{values[i]}", '
     stringy = stringy[:-2]
     print(stringy)
-    sql = f'UPDATE CatalogService.Address SET {stringy} WHERE id={id};'
+    sql = f'UPDATE CatalogService.addresses SET {stringy} WHERE id={id};'
     print(sql)
-    msg = db.getDbConnection(sql)
+    msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
@@ -370,7 +361,7 @@ def updateAddress(id):
 @application.route("/Registrations", methods=["POST"])
 def registerUser():
     body = json.loads(request.data.decode())
-    password = body['hashed_Password']
+    password = body['password']
     hashed_password = hash(password)
     print(hashed_password)
     rsp = addUsers(hashed_password)
@@ -382,11 +373,11 @@ def registerUser():
 def login():
 	body = json.loads(request.data.decode())
 	email = body['email']
-	password = body['hashed_Password']
+	password = body['password']
 	hashed_password = hash(password)
-	sql = f'SELECT hashed_Password from CatalogService.Users WHERE email="{email}";'
-	msg = db.getDbConnection(sql)
-	stored_password = msg[0]['hashed_Password']
+	sql = f'SELECT password from CatalogService.users WHERE email="{email}";'
+	msg = dbsvc.getDbConnection(sql)
+	stored_password = msg[0]['password']
 	print(hashed_password, stored_password)
 	if hashed_password == stored_password:
 	    rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
@@ -465,12 +456,20 @@ def service_info():
 
 logger.debug("__name__ = " + str(__name__))
 
+"""
+add_sample_user() is just example code.
+
+"""
+
+@application.route("/add/sample_user", methods=["GET"])
+def add_sample_user():
+    ll = Landlords(id=1, first_name="Miguel", last_name="Kestenbaum")
+    user = Users(first_name="Dweej", last_name="Patel", email="dp@fakemail.com", position="Student", password=hash("password"), landlord_id=1)
+    db.session.add(ll)
+    db.session.add(user)
+    db.session.commit()
+    rsp = Response("HELLO", status=200, content_type="text/plain")
+    return rsp
+
 def myfirstmethod(verb, path, path_params, query_params, headers, body):
     pass
-
-# run the app.
-if __name__ == "__main__":
-    # Setting debug to True enables debug output. This line should be
-    # removed before deploying a production app.
-
-    application.run(host='0.0.0.0', port=8000)

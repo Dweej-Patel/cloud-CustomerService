@@ -1,14 +1,11 @@
 import pymysql
-import os
-
-pw = os.environ['dbuser']
-host = os.environ['dbhost']
+from db_config import *
 
 c_info = {
-    "host": host,
-    "port": 3306,
-    "user": "admin",
-    "password": pw,
+    "host": DB_HOST,
+    "port": DB_PORT,
+    "user": DB_USER,
+    "password": DB_PASSWORD,
     "cursorclass": pymysql.cursors.DictCursor,
     "autocommit": True,
 }
