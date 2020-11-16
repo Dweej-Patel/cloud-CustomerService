@@ -463,11 +463,15 @@ add_sample_user() is just example code.
 
 @application.route("/add/sample_user", methods=["GET"])
 def add_sample_user():
-    ll = Landlords(id=1, first_name="Miguel", last_name="Kestenbaum")
-    user = Users(first_name="Dweej", last_name="Patel", email="dp@fakemail.com", position="Student", password=hash("password"), landlord_id=1)
-    db.session.add(ll)
-    db.session.add(user)
-    db.session.commit()
+    try:
+        ll = Landlords(id=1, first_name="Miguel", last_name="Kestenbaum")
+        user = Users(first_name="Dweej", last_name="Patel", email="dp@fakemail.com", position="Student", password=hash("password"), landlord_id=1)
+        db.session.add(ll)
+        db.session.commit()
+        db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        print("****DB_ERROR******")
     rsp = Response("HELLO", status=200, content_type="text/plain")
     return rsp
 
