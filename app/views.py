@@ -16,13 +16,8 @@ from app import db
 
 cwd = os.getcwd()
 sys.path.append(cwd)
-jwt_key = os.environ['jwt_key']
-salt = os.environ['salt'].encode('utf-8')
 
-cwd = os.getcwd()
-sys.path.append(cwd)
-jwt_key = os.environ['jwt_key']
-salt = os.environ['salt'].encode('utf-8')
+from db_config import JWT_KEY, SALT
 
 print("*** PYHTHONPATH = " + str(sys.path) + "***")
 
@@ -91,11 +86,8 @@ welcome = """
 <head>
   <!--
     Copyright 2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-
     Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
-
         http://aws.Amazon/apache2.0/
-
     or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
   -->
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -131,7 +123,6 @@ welcome = """
     right: 50%;
     bottom: 0px;
     left: 0px;
-
     text-align: right;
     padding-top: 11em;
     background-color: #1BA86D;
@@ -148,10 +139,8 @@ welcome = """
     right: 0px;
     bottom: 0px;
     left: 50%;
-
     background-color: #E0E0E0;
   }
-
   h1 {
     font-size: 500%;
     font-weight: normal;
@@ -176,7 +165,6 @@ welcome = """
     <h1>Congratulations</h1>
     <p>My second, modified AWS Elastic Beanstalk Python Application is now running on your own dedicated environment in the AWS Cloud</p>
   </div>
-
   <div class="linksColumn"> 
     <h2>What's Next?</h2>
     <ul>
@@ -186,7 +174,6 @@ welcome = """
     <li><a href="http://docs.amazonwebservices.com/elasticbeanstalk/latest/dg/create_deploy_Python_flask.html">Deploy a Flask Application to AWS Elastic Beanstalk</a></li>
     <li><a href="http://docs.amazonwebservices.com/elasticbeanstalk/latest/dg/create_deploy_Python_custom_container.html">Customizing and Configuring a Python Container</a></li>
     <li><a href="http://docs.amazonwebservices.com/elasticbeanstalk/latest/dg/using-features.loggingS3.title.html">Working with Logs</a></li>
-
     </ul>
   </div>
 </body>
@@ -366,7 +353,7 @@ def registerUser():
     return rsp
 
 
-@application.route("/logins", methods=["POST"])
+@application.route("/Login", methods=["POST"])
 def login():
     body = json.loads(request.data.decode())
     email = body['email']
@@ -375,7 +362,6 @@ def login():
     sql = f'SELECT password from CatalogService.users WHERE email="{email}";'
     msg = dbsvc.getDbConnection(sql)
     stored_password = msg[0]['password']
-    print(hashed_password, stored_password)
     if hashed_password == stored_password:
         rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
         token = encode_token(body['email'], 'user')
@@ -390,7 +376,7 @@ def hash(password):
     res = hashlib.pbkdf2_hmac(
         'sha256',  # The hash digest algorithm for HMAC
         password.encode('utf-8'),  # Convert the password to bytes
-        salt,  # Provide the salt
+        SALT.encode('utf-8'),  # Provide the salt
         100000  # It is recommended to use at least 100,000 iterations of SHA-256
     )
     return res
@@ -406,7 +392,7 @@ def encode_token(email, role):
         }
         return jwt.encode(
             payload,
-            jwt_key,
+            JWT_KEY,
             algorithm='HS256'
         )
     except Exception as e:
@@ -415,7 +401,7 @@ def encode_token(email, role):
 
 def decode_token(auth_token):
     try:
-        payload = jwt.decode(auth_token, jwt_key)
+        payload = jwt.decode(auth_token, JWT_KEY)
         # print(payload)
         return payload['email'], payload['role']
     except jwt.ExpiredSignatureError:
@@ -461,7 +447,6 @@ logger.debug("__name__ = " + str(__name__))
 
 """
 add_sample_user() is just example code.
-
 """
 
 
