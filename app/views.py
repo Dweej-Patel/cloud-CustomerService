@@ -264,8 +264,6 @@ def addUsers():
     rsp = Response("User Registered", status=200, content_type="text/plain")
     return rsp
 
-    return rsp
-
 
 @application.route("/Users/id/<id>", methods=["DELETE"])
 def deleteUsers(id):
@@ -361,6 +359,7 @@ def updateAddress(id):
 def registerUser():
     body = json.loads(request.data.decode())
     rsp = addUsers()
+    rsp
     token = encode_token(body['email'], 'user')
     rsp.headers['token'] = token
     return rsp
