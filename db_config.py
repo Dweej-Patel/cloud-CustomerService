@@ -59,7 +59,6 @@ DB_USER = "admin"
 DB_NAME = "CatalogService"
 
 secrets = json.loads(get_secret())
-print(secrets.get('dbuser'))
 DB_PASSWORD = secrets['dbuser']
 DB_HOST = secrets['dbhost']
 SALT = secrets['salt']
