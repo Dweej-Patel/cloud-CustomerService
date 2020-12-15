@@ -2,3 +2,5 @@
 CatalogServiceEnv/
 __pycache__
 .vscode/
+
+venv
