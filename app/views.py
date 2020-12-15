@@ -36,12 +36,12 @@ logger.setLevel(logging.DEBUG)
 
 import jwt
 
+
 # 1. Extract the input information from the requests object.
 # 2. Log the information
 # 3. Return extracted information.
 #
 def log_and_extract_input(method, path_params=None):
-
     path = request.path
     args = dict(request.args)
     data = None
@@ -59,14 +59,14 @@ def log_and_extract_input(method, path_params=None):
 
     log_message = str(datetime.now()) + ": Method " + method
 
-    inputs =  {
+    inputs = {
         "path": path,
         "method": method,
         "path_params": path_params,
         "query_params": args,
         "headers": headers,
         "body": data
-        }
+    }
 
     log_message += " received: \n" + json.dumps(inputs, indent=2)
     logger.debug(log_message)
@@ -75,7 +75,6 @@ def log_and_extract_input(method, path_params=None):
 
 
 def log_response(method, status, data, txt):
-
     msg = {
         "method": method,
         "status": status,
@@ -194,9 +193,9 @@ welcome = """
 </html>
 """
 
+
 @application.route("/")
 def index():
-
     rsp = Response(welcome, status=200, content_type="text/html")
     return rsp
 
@@ -204,17 +203,15 @@ def index():
 # This function performs a basic health check. We will flesh this out.
 @application.route("/api/health", methods=["GET"])
 def health_check():
-
     pf = platform.system()
 
-    rsp_data = { "status": "healthy", "time": str(datetime.now()),
-                 "platform": pf,
-                 "release": platform.release()
-                 }
+    rsp_data = {"status": "healthy", "time": str(datetime.now()),
+                "platform": pf,
+                "release": platform.release()
+                }
 
     if pf == "Darwin":
-        rsp_data["note"]= "For some reason, macOS is called 'Darwin'"
-
+        rsp_data["note"] = "For some reason, macOS is called 'Darwin'"
 
     hostname = socket.gethostname()
     IPAddr = socket.gethostbyname(hostname)
@@ -229,20 +226,19 @@ def health_check():
 
 @application.route("/demo/<parameter>", methods=["GET", "POST"])
 def demo(parameter):
-
-    inputs = log_and_extract_input(demo, { "parameter": parameter })
+    inputs = log_and_extract_input(demo, {"parameter": parameter})
 
     msg = {
-        "/demo received the following inputs" : inputs
+        "/demo received the following inputs": inputs
     }
 
     rsp = Response(json.dumps(msg), status=200, content_type="application/json")
     return rsp
 
+
 @application.route("/Users", methods=["GET"])
 @application.route("/Users/<parameter>", methods=["GET"])
 def getUsers(parameter=""):
-
     if parameter:
         sql = f"SELECT * from CatalogService.users LIMIT {parameter};"
     else:
@@ -253,25 +249,26 @@ def getUsers(parameter=""):
 
     return rsp
 
+
 @application.route("/Users", methods=["POST"])
-def addUsers(hashed_password):
+def addUsers():
     body = json.loads(request.data.decode())
-    body['password'] = hashed_password
-    names = [x for x, y in body.items()]
-    values = [y for x, y in body.items()]
-    values = '", "'.join(map(str, values))
-    names = ', '.join(map(str, names))
-    sql = f'INSERT INTO CatalogService.users ({names}) values ("{values}");'
-    print(sql)
-    msg = dbsvc.getDbConnection(sql)
-    print(msg)
-    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+    try:
+        user = Users(first_name=body['firstName'], last_name=body['lastName'], email=body['email'],
+                     position=body.get('position'), password=hash(body['password']), landlord_id=body['landLordId'],
+                     email_verification='INACTIVE')
+        db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        print("****DB_ERROR******")
+    rsp = Response("User Registered", status=200, content_type="text/plain")
+    return rsp
 
     return rsp
 
+
 @application.route("/Users/id/<id>", methods=["DELETE"])
 def deleteUsers(id):
-
     sql = f'DELETE from CatalogService.users WHERE id={id};'
     print(sql)
     msg = dbsvc.getDbConnection(sql)
@@ -280,9 +277,9 @@ def deleteUsers(id):
 
     return rsp
 
+
 @application.route("/Users/id/<id>", methods=["PUT"])
 def updateUsers(id):
-
     body = json.loads(request.data.decode())
     names = [x for x, y in body.items()]
     values = [y for x, y in body.items()]
@@ -299,10 +296,10 @@ def updateUsers(id):
 
     return rsp
 
+
 @application.route("/Address", methods=["GET"])
 @application.route("/Address/<parameter>", methods=["GET"])
 def getAddresses(parameter=""):
-
     if parameter:
         sql = f"SELECT * from CatalogService.addresses LIMIT {parameter};"
     else:
@@ -313,9 +310,9 @@ def getAddresses(parameter=""):
 
     return rsp
 
+
 @application.route("/Address", methods=["POST"])
 def addAddresses():
-
     body = json.loads(request.data.decode())
     names = [x for x, y in body.items()]
     values = [y for x, y in body.items()]
@@ -328,9 +325,10 @@ def addAddresses():
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
     return rsp
+
+
 @application.route("/Address/id/<id>", methods=["DELETE"])
 def deleteAddress(id):
-
     sql = f'DELETE from CatalogService.addresses WHERE id={id};'
     print(sql)
     msg = dbsvc.getDbConnection(sql)
@@ -339,9 +337,9 @@ def deleteAddress(id):
 
     return rsp
 
+
 @application.route("/Address/id/<id>", methods=["PUT"])
 def updateAddress(id):
-
     body = json.loads(request.data.decode())
     names = [x for x, y in body.items()]
     values = [y for x, y in body.items()]
@@ -358,44 +356,45 @@ def updateAddress(id):
 
     return rsp
 
+
 @application.route("/Registrations", methods=["POST"])
 def registerUser():
     body = json.loads(request.data.decode())
-    password = body['password']
-    hashed_password = hash(password)
-    print(hashed_password)
-    rsp = addUsers(hashed_password)
+    rsp = addUsers()
     token = encode_token(body['email'], 'user')
     rsp.headers['token'] = token
     return rsp
 
+
 @application.route("/logins", methods=["POST"])
 def login():
-	body = json.loads(request.data.decode())
-	email = body['email']
-	password = body['password']
-	hashed_password = hash(password)
-	sql = f'SELECT password from CatalogService.users WHERE email="{email}";'
-	msg = dbsvc.getDbConnection(sql)
-	stored_password = msg[0]['password']
-	print(hashed_password, stored_password)
-	if hashed_password == stored_password:
-	    rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
-	    token = encode_token(body['email'], 'user')
-	    rsp.headers['token'] = token
-	    return rsp
-	else:
-	    rsp = Response(json.dumps("", default=str), status=401, content_type="application/json")
-	    return rsp
+    body = json.loads(request.data.decode())
+    email = body['email']
+    password = body['password']
+    hashed_password = hash(password)
+    sql = f'SELECT password from CatalogService.users WHERE email="{email}";'
+    msg = dbsvc.getDbConnection(sql)
+    stored_password = msg[0]['password']
+    print(hashed_password, stored_password)
+    if hashed_password == stored_password:
+        rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
+        token = encode_token(body['email'], 'user')
+        rsp.headers['token'] = token
+        return rsp
+    else:
+        rsp = Response(json.dumps("", default=str), status=401, content_type="application/json")
+        return rsp
+
 
 def hash(password):
     res = hashlib.pbkdf2_hmac(
-        'sha256', # The hash digest algorithm for HMAC
-        password.encode('utf-8'), # Convert the password to bytes
-        salt, # Provide the salt
-        100000 # It is recommended to use at least 100,000 iterations of SHA-256 
+        'sha256',  # The hash digest algorithm for HMAC
+        password.encode('utf-8'),  # Convert the password to bytes
+        salt,  # Provide the salt
+        100000  # It is recommended to use at least 100,000 iterations of SHA-256
     )
     return res
+
 
 def encode_token(email, role):
     try:
@@ -403,15 +402,16 @@ def encode_token(email, role):
             'exp': datetime.utcnow() + timedelta(days=7, seconds=0),
             'iat': datetime.utcnow(),
             'email': email,
-            'role': role 
+            'role': role
         }
         return jwt.encode(
             payload,
             jwt_key,
             algorithm='HS256'
-            )
+        )
     except Exception as e:
         return e
+
 
 def decode_token(auth_token):
     try:
@@ -421,8 +421,7 @@ def decode_token(auth_token):
     except jwt.ExpiredSignatureError:
         return 'Signature expired. Please log in again.', None
     except jwt.InvalidTokenError:
-        return 'Invalid token. Please log in again.', None	
-	
+        return 'Invalid token. Please log in again.', None
 
 
 @application.route("/boo", methods=["GET"])
@@ -430,15 +429,18 @@ def boo():
     rsp = Response("Hoo", status=200, content_type="text/plain")
     return rsp
 
+
 @application.route("/hello_puppy", methods=["GET"])
 def hello_puppy():
     rsp = Response("Hello_Puppy", status=200, content_type="text/plain")
     return rsp
 
+
 @application.route("/hello_world", methods=["GET"])
 def hello_world():
     rsp = Response("Hello_World", status=200, content_type="text/plain")
     return rsp
+
 
 @application.route("/service_info", methods=["GET"])
 def service_info():
@@ -454,6 +456,7 @@ def service_info():
     rsp = Response(service_info_msg, status=200, content_type="text/html")
     return rsp
 
+
 logger.debug("__name__ = " + str(__name__))
 
 """
@@ -461,11 +464,13 @@ add_sample_user() is just example code.
 
 """
 
+
 @application.route("/add/sample_user", methods=["GET"])
 def add_sample_user():
     try:
         ll = Landlords(id=1, first_name="Miguel", last_name="Kestenbaum")
-        user = Users(first_name="Dweej", last_name="Patel", email="dp@fakemail.com", position="Student", password=hash("password"), landlord_id=1)
+        user = Users(first_name="Dweej", last_name="Patel", email="dp@fakemail.com", position="Student",
+                     password=hash("password"), landlord_id=1)
         db.session.add(ll)
         db.session.commit()
         db.session.add(user)
@@ -474,6 +479,7 @@ def add_sample_user():
         print("****DB_ERROR******")
     rsp = Response("HELLO", status=200, content_type="text/plain")
     return rsp
+
 
 def myfirstmethod(verb, path, path_params, query_params, headers, body):
     pass
