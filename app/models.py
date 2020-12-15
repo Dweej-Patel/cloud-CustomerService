@@ -12,7 +12,7 @@ class Users(db.Model):
     created_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     landlord_id = db.Column(db.Integer, db.ForeignKey("landlords.id"))
     address_id = db.Column(db.Integer, db.ForeignKey("addresses.id"))
-    email_verification = db.Column(db.Boolean, nullable=False, default=False)
+    email_verification = db.Column(db.Enum, nullable=False, default=False)
 
     def __repr__(self):
         return f"User: '{self.id}', '{self.first_name}', '{self.last_name}', '{self.email}', '{self.created_date}'"

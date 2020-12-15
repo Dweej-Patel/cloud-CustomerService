@@ -260,8 +260,10 @@ def addUsers():
         db.session.add(user)
         db.session.commit()
     except Exception as e:
-        print("****DB_ERROR******")
-    rsp = Response("User Registered", status=200, content_type="text/plain")
+        print("Sorry DB error: ", e)
+        rsp = Response("Error on registration", status=401, content_type="text/plain")
+        return rsp
+    rsp = Response("User Registered", status=201, content_type="text/plain")
     return rsp
 
 
@@ -359,7 +361,6 @@ def updateAddress(id):
 def registerUser():
     body = json.loads(request.data.decode())
     rsp = addUsers()
-    rsp
     token = encode_token(body['email'], 'user')
     rsp.headers['token'] = token
     return rsp
