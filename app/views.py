@@ -16,13 +16,8 @@ from app import db
 
 cwd = os.getcwd()
 sys.path.append(cwd)
-jwt_key = os.environ['jwt_key']
-salt = os.environ['salt'].encode('utf-8')
 
-cwd = os.getcwd()
-sys.path.append(cwd)
-jwt_key = os.environ['jwt_key']
-salt = os.environ['salt'].encode('utf-8')
+from db_config import JWT_KEY, SALT
 
 print("*** PYHTHONPATH = " + str(sys.path) + "***")
 
@@ -366,7 +361,7 @@ def registerUser():
     return rsp
 
 
-@application.route("/logins", methods=["POST"])
+@application.route("/Login", methods=["POST"])
 def login():
     body = json.loads(request.data.decode())
     email = body['email']
@@ -375,7 +370,6 @@ def login():
     sql = f'SELECT password from CatalogService.users WHERE email="{email}";'
     msg = dbsvc.getDbConnection(sql)
     stored_password = msg[0]['password']
-    print(hashed_password, stored_password)
     if hashed_password == stored_password:
         rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
         token = encode_token(body['email'], 'user')
@@ -390,7 +384,7 @@ def hash(password):
     res = hashlib.pbkdf2_hmac(
         'sha256',  # The hash digest algorithm for HMAC
         password.encode('utf-8'),  # Convert the password to bytes
-        salt,  # Provide the salt
+        SALT.encode('utf-8'),  # Provide the salt
         100000  # It is recommended to use at least 100,000 iterations of SHA-256
     )
     return res
@@ -406,7 +400,7 @@ def encode_token(email, role):
         }
         return jwt.encode(
             payload,
-            jwt_key,
+            JWT_KEY,
             algorithm='HS256'
         )
     except Exception as e:
@@ -415,7 +409,7 @@ def encode_token(email, role):
 
 def decode_token(auth_token):
     try:
-        payload = jwt.decode(auth_token, jwt_key)
+        payload = jwt.decode(auth_token, JWT_KEY)
         # print(payload)
         return payload['email'], payload['role']
     except jwt.ExpiredSignatureError:
