@@ -56,7 +56,7 @@ def get_secret():
 
 DB_PORT = 3306
 DB_USER = "admin"
-DB_NAME = "CatalogService"
+DB_NAME = "CustomerService"
 
 secrets = json.loads(get_secret())
 DB_PASSWORD = secrets['dbuser']

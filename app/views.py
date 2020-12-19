@@ -227,9 +227,9 @@ def demo(parameter):
 @application.route("/Users/<parameter>", methods=["GET"])
 def getUsers(parameter=""):
     if parameter:
-        sql = f"SELECT * from CatalogService.users LIMIT {parameter};"
+        sql = f"SELECT * from CustomerService.users LIMIT {parameter};"
     else:
-        sql = f"SELECT * from CatalogService.users;"
+        sql = f"SELECT * from CustomerService.users;"
     msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
@@ -272,7 +272,7 @@ def addLandlords():
 
 @application.route("/Users/id/<id>", methods=["DELETE"])
 def deleteUsers(id):
-    sql = f'DELETE from CatalogService.users WHERE id={id};'
+    sql = f'DELETE from CustomerService.users WHERE id={id};'
     print(sql)
     msg = dbsvc.getDbConnection(sql)
     print(msg)
@@ -291,7 +291,7 @@ def updateUsers(id):
         stringy += f'{name} = "{values[i]}", '
     stringy = stringy[:-2]
     print(stringy)
-    sql = f'UPDATE CatalogService.users SET {stringy} WHERE id={id};'
+    sql = f'UPDATE CustomerService.users SET {stringy} WHERE id={id};'
     print(sql)
     msg = dbsvc.getDbConnection(sql)
     print(msg)
@@ -304,9 +304,9 @@ def updateUsers(id):
 @application.route("/Address/<parameter>", methods=["GET"])
 def getAddresses(parameter=""):
     if parameter:
-        sql = f"SELECT * from CatalogService.addresses LIMIT {parameter};"
+        sql = f"SELECT * from CustomerService.addresses LIMIT {parameter};"
     else:
-        sql = f"SELECT * from CatalogService.addresses;"
+        sql = f"SELECT * from CustomerService.addresses;"
     msg = dbsvc.getDbConnection(sql)
     print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
@@ -321,7 +321,7 @@ def addAddresses():
     values = [y for x, y in body.items()]
     values = '", "'.join(map(str, values))
     names = ', '.join(map(str, names))
-    sql = f'INSERT INTO CatalogService.addresses ({names}) values ("{values}");'
+    sql = f'INSERT INTO CustomerService.addresses ({names}) values ("{values}");'
     print(sql)
     msg = dbsvc.getDbConnection(sql)
     print(msg)
@@ -332,7 +332,7 @@ def addAddresses():
 
 @application.route("/Address/id/<id>", methods=["DELETE"])
 def deleteAddress(id):
-    sql = f'DELETE from CatalogService.addresses WHERE id={id};'
+    sql = f'DELETE from CustomerService.addresses WHERE id={id};'
     print(sql)
     msg = dbsvc.getDbConnection(sql)
     print(msg)
@@ -351,7 +351,7 @@ def updateAddress(id):
         stringy += f'{name} = "{values[i]}", '
     stringy = stringy[:-2]
     print(stringy)
-    sql = f'UPDATE CatalogService.addresses SET {stringy} WHERE id={id};'
+    sql = f'UPDATE CustomerService.addresses SET {stringy} WHERE id={id};'
     print(sql)
     msg = dbsvc.getDbConnection(sql)
     print(msg)
