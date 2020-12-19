@@ -254,6 +254,22 @@ def addUsers():
     return rsp
 
 
+@application.route("/Landlords", methods=["POST"])
+def addLandlords():
+    body = json.loads(request.data.decode())
+    try:
+        landlord = Landlords(first_name=body['firstName'], last_name=body['lastName'], email=body['email'],
+                             password=hash(body['password']), email_verification='INACTIVE')
+        db.session.add(landlord)
+        db.session.commit()
+    except Exception as e:
+        print("Sorry DB error: ", e)
+        rsp = Response("Error on registration", status=401, content_type="text/plain")
+        return rsp
+    rsp = Response("User Registered", status=201, content_type="text/plain")
+    return rsp
+
+
 @application.route("/Users/id/<id>", methods=["DELETE"])
 def deleteUsers(id):
     sql = f'DELETE from CatalogService.users WHERE id={id};'
@@ -353,15 +369,41 @@ def registerUser():
     return rsp
 
 
+@application.route("/Registrations-landlords", methods=["POST"])
+def registerLandlord():
+    body = json.loads(request.data.decode())
+    rsp = addLandlords()
+    token = encode_token(body['email'], 'Landlord')
+    rsp.headers['token'] = token
+    return rsp
+
+
 @application.route("/Login", methods=["POST"])
 def login():
     body = json.loads(request.data.decode())
     email = body['email']
     password = body['password']
     hashed_password = hash(password)
-    sql = f'SELECT password from CatalogService.users WHERE email="{email}";'
-    msg = dbsvc.getDbConnection(sql)
-    stored_password = msg[0]['password']
+    user = Users.query.filter_by(email=email).first()
+    stored_password = user.password
+    if hashed_password == stored_password:
+        rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
+        token = encode_token(body['email'], 'user')
+        rsp.headers['token'] = token
+        return rsp
+    else:
+        rsp = Response(json.dumps("", default=str), status=401, content_type="application/json")
+        return rsp
+
+
+@application.route("/Login-landlord", methods=["POST"])
+def loginLandlord():
+    body = json.loads(request.data.decode())
+    email = body['email']
+    password = body['password']
+    hashed_password = hash(password)
+    ll = Landlords.query.filter_by(email=email).first()
+    stored_password = ll.password
     if hashed_password == stored_password:
         rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
         token = encode_token(body['email'], 'user')
