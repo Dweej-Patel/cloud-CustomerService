@@ -6,6 +6,14 @@ import hashlib, binascii, os
 import sys
 import platform
 import socket
+import boto3
+from botocore.config import Config
+
+my_config = Config(
+    region_name = 'us-east-1',
+    signature_version = 'v4',
+)
+
 
 from flask import Response
 from flask import request, jsonify
@@ -20,6 +28,7 @@ sys.path.append(cwd)
 from db_config import JWT_KEY, SALT
 
 print("*** PYHTHONPATH = " + str(sys.path) + "***")
+client = boto3.client('sns', config=my_config)
 
 import logging
 from app import dbsvc
@@ -242,7 +251,7 @@ def addUsers():
     body = json.loads(request.data.decode())
     try:
         user = Users(first_name=body['firstName'], last_name=body['lastName'], email=body['email'],
-                     position=body.get('position'), password=hash(body['password']), landlord_id=body['landLordId'],
+                     password=hash(body['password']), landlord_id=body['landLordId'],
                      email_verification='INACTIVE')
         db.session.add(user)
         db.session.commit()
@@ -364,18 +373,63 @@ def updateAddress(id):
 def registerUser():
     body = json.loads(request.data.decode())
     rsp = addUsers()
+    print(rsp)
     token = encode_token(body['email'], 'user')
+    body.update({"token": str(token.decode())})
+    print(body)
+    response = client.publish(
+        TopicArn='arn:aws:sns:us-east-1:318810397967:email',
+        MessageStructure='string',
+        Message=json.dumps(body)
+    )
+    print('========================')
+    print(response)
+    print('========================')
+    rsp = Response(json.dumps(body), status=201, content_type="application/json")
     rsp.headers['token'] = token
     return rsp
 
+
+@application.route("/Active-landlord", methods=["POST"])
+def activateLandlord():
+    body = json.loads(request.data.decode())
+    email = body['email']
+    email = f"'{email}'"
+    stringy = f"email_verification = 'active'"
+    sql = f"UPDATE CustomerService.landlords SET {stringy} WHERE email={email};"
+    print(sql)
+    msg = dbsvc.getDbConnection(sql)
+    print(msg)
+    return Response("Success", status=200)
+
+@application.route("/Active-user", methods=["POST"])
+def activateUser():
+    body = json.loads(request.data.decode())
+    email = body['email']
+    email = f"'{email}'"
+    stringy = "email_verification = 'active'"
+    sql = f'UPDATE CustomerService.users SET {stringy} WHERE email={email};'
+    print(sql)
+    msg = dbsvc.getDbConnection(sql)
+    print(msg)
+    return Response(json.loads("Success"), status=200)
 
 @application.route("/Registrations-landlords", methods=["POST"])
 def registerLandlord():
     body = json.loads(request.data.decode())
     rsp = addLandlords()
+    response = client.publish(
+        TopicArn='arn:aws:sns:us-east-1:318810397967:email',
+        MessageStructure='string',
+        Message=json.dumps(body)
+    )
+    rsp = Response(json.dumps(body), status=201, content_type="application/json")
     token = encode_token(body['email'], 'Landlord')
     rsp.headers['token'] = token
     return rsp
+
+
+
 
 
 @application.route("/Login", methods=["POST"])
