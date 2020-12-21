@@ -412,7 +412,8 @@ def activateUser():
     print(sql)
     msg = dbsvc.getDbConnection(sql)
     print(msg)
-    return Response(json.loads("Success"), status=200)
+    return Response("Success", status=200)
+
 
 @application.route("/Registrations-landlords", methods=["POST"])
 def registerLandlord():
