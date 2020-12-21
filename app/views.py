@@ -414,6 +414,7 @@ def activateUser():
     print(msg)
     return Response("Success", status=200)
 
+
 @application.route("/Registrations-landlords", methods=["POST"])
 def registerLandlord():
     body = json.loads(request.data.decode())
