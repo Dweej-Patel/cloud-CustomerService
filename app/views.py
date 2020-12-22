@@ -591,15 +591,19 @@ def suggestaddress():
     credentials = StaticCredentials(AUTH_ID, AUTH_TOKEN)
 
     client = ClientBuilder(credentials).build_us_autocomplete_api_client()
-    print(request.data.decode())
-    lookup = AutocompleteLookup(request.data.decode())
+    streetName = json.loads(request.data.decode())['streetName']
+    print(streetName)
+    try:
+        lookup = AutocompleteLookup(streetName)
 
-    client.send(lookup)
-    resp = []
-    for suggestion in lookup.result:
-        resp.append(suggestion.text)
+        client.send(lookup)
+        resp = []
+        for suggestion in lookup.result:
+            resp.append(suggestion.text)
+        return Response(json.dumps(resp, default=str), status=200, content_type="text/json")
+    except Exception as e:
+        return Response(json.dumps([], default=str), status=200, content_type="text/json")
 
-    return Response(resp, status=200, content_type="text/json")
 
 
 @application.route("/address_rsp/", methods=["POST", "PUT"])
