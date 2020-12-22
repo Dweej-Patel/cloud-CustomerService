@@ -13,6 +13,7 @@ import os
 
 from smartystreets_python_sdk import StaticCredentials, ClientBuilder
 from smartystreets_python_sdk.us_autocomplete import Lookup as AutocompleteLookup, geolocation_type
+from smartystreets_python_sdk.us_street import Lookup as StreetLookup
 
 my_config = Config(
     region_name = 'us-east-1',
@@ -571,8 +572,9 @@ def add_sample_user():
 def myfirstmethod(verb, path, path_params, query_params, headers, body):
     pass
 
-@application.route("/address-verification", methods=["POST"])
-def verifyaddress():
+
+@application.route("/address-suggest", methods=["POST"])
+def suggestaddress():
     auth_id =AUTH_ID
     auth_token = AUTH_TOKEN
 
@@ -588,3 +590,37 @@ def verifyaddress():
         resp.append(suggestion.text)
 
     return Response(resp, status=200, content_type="text/json")
+
+
+@application.route("/address_rsp/", methods=["POST", "PUT"])
+def verifyaddress():
+    auth_id =AUTH_ID
+    auth_token = AUTH_TOKEN
+    credentials = StaticCredentials(auth_id, auth_token)
+    client = ClientBuilder(credentials).build_us_street_api_client()
+
+    lookup = StreetLookup()
+    lookup.addressee = json.loads(request.data.decode())['address']
+    lookup.street = json.loads(request.data.decode())['street']
+    lookup.secondary = json.loads(request.data.decode())['secondary']
+    lookup.city = json.loads(request.data.decode())['city']
+    lookup.state = json.loads(request.data.decode())['state']
+    lookup.zipcode = json.loads(request.data.decode())['zipcode']
+    lookup.candidates = 1
+
+    try:
+        client.send_lookup(lookup)
+    except Exception.SmartyException as err:
+        print(err)
+        return Response([], status=500)
+
+    result = lookup.result
+
+    if not result:
+        Response.headers['Location'] = False
+        print("No candidates. This means the address is not valid.")
+        return Response([], status=404, content_type="text/json")
+
+    first_candidate = result[0]
+    Response.headers['Location'] = True
+    return Response(first_candidate, status=201, content_type="text/json")
