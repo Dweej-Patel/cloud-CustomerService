@@ -606,16 +606,16 @@ def suggestaddress():
 
 
 
-@application.route("/address_rsp/", methods=["POST", "PUT"])
+@application.route("/address-rsp", methods=["POST", "PUT"])
 def verifyaddress():
     body = json.loads(request.data.decode())
     credentials = StaticCredentials(AUTH_ID, AUTH_TOKEN)
     client = ClientBuilder(credentials).build_us_street_api_client()
 
     lookup = StreetLookup()
-    lookup.addressee = body['address']
+    #lookup.addressee = body.get('address')
     lookup.street = body['street']
-    lookup.secondary = body['secondary']
+    #lookup.secondary = body.get('secondary')
     lookup.city = body['city']
     lookup.state = body['state']
     lookup.zipcode = body['zipcode']
@@ -630,10 +630,7 @@ def verifyaddress():
     result = lookup.result
 
     if not result:
-        Response.headers['Location'] = False
         print("No candidates. This means the address is not valid.")
-        return Response([], status=404, content_type="text/json")
-
-    first_candidate = result[0]
-    Response.headers['Location'] = True
-    return Response(first_candidate, status=201, content_type="text/json")
+        return Response(json.dumps(False, default=str), status=404, content_type="text/json")
+    print(result)
+    return Response(json.dumps(True, default=str), status=201, content_type="text/json")
