@@ -16,7 +16,11 @@ cur = conn.cursor()
 
 def getDbConnection(sql):
     res = cur.execute(sql)
+    print(res)
+    if res == 0:
+        return res
     res = cur.fetchall()
+    print(res)
     return res
 
 

@@ -399,6 +399,8 @@ def activateLandlord():
     sql = f"UPDATE CustomerService.landlords SET {stringy} WHERE email={email};"
     print(sql)
     msg = dbsvc.getDbConnection(sql)
+    if msg == 0:
+        return Response("Failure", status=404)
     print(msg)
     return Response("Success", status=200)
 
@@ -411,6 +413,8 @@ def activateUser():
     sql = f'UPDATE CustomerService.users SET {stringy} WHERE email={email};'
     print(sql)
     msg = dbsvc.getDbConnection(sql)
+    if msg == 0:
+        return Response("Failure", status=404)
     print(msg)
     return Response("Success", status=200)
 
