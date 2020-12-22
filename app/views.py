@@ -9,6 +9,11 @@ import socket
 import boto3
 from botocore.config import Config
 
+import os
+
+from smartystreets_python_sdk import StaticCredentials, ClientBuilder
+from smartystreets_python_sdk.us_autocomplete import Lookup as AutocompleteLookup, geolocation_type
+
 my_config = Config(
     region_name = 'us-east-1',
     signature_version = 'v4',
@@ -25,7 +30,7 @@ from app import db
 cwd = os.getcwd()
 sys.path.append(cwd)
 
-from db_config import JWT_KEY, SALT
+from db_config import JWT_KEY, SALT, AUTH_ID, AUTH_TOKEN
 
 print("*** PYHTHONPATH = " + str(sys.path) + "***")
 client = boto3.client('sns', config=my_config)
@@ -565,3 +570,21 @@ def add_sample_user():
 
 def myfirstmethod(verb, path, path_params, query_params, headers, body):
     pass
+
+@application.route("/address-verification", methods=["POST"])
+def verifyaddress():
+    auth_id =AUTH_ID
+    auth_token = AUTH_TOKEN
+
+    credentials = StaticCredentials(auth_id, auth_token)
+
+    client = ClientBuilder(credentials).build_us_autocomplete_api_client()
+    print(request.data.decode())
+    lookup = AutocompleteLookup(request.data.decode())
+
+    client.send(lookup)
+    resp = []
+    for suggestion in lookup.result:
+        resp.append(suggestion.text)
+
+    return Response(resp, status=200, content_type="text/json")
