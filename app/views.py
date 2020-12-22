@@ -448,8 +448,9 @@ def login():
     user = Users.query.filter_by(email=email).first()
     stored_password = user.password
     if hashed_password == stored_password:
-        rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
         token = encode_token(body['email'], 'user')
+        body.update({"token": str(token.decode())})
+        rsp = Response(json.dumps(body, default=str), status=200, content_type="application/json")
         rsp.headers['token'] = token
         return rsp
     else:
@@ -473,6 +474,18 @@ def loginLandlord():
     else:
         rsp = Response(json.dumps("", default=str), status=401, content_type="application/json")
         return rsp
+
+
+@application.route("/User/getByToken", methods=["POST"])
+def getUserByToken():
+    body = json.loads(request.data.decode())
+    token = body['token']
+    email, role = decode_token(token)
+    user = Users.query.filter_by(email=email).first()
+    if user:
+        return Response(json.dumps(user.to_json(), default=str), status=200, content_type="application/json")
+    return Response(json.dumps("", default=str), status=401, content_type="application/json")
+
 
 
 def hash(password):
@@ -575,10 +588,7 @@ def myfirstmethod(verb, path, path_params, query_params, headers, body):
 
 @application.route("/address-suggest", methods=["POST"])
 def suggestaddress():
-    auth_id =AUTH_ID
-    auth_token = AUTH_TOKEN
-
-    credentials = StaticCredentials(auth_id, auth_token)
+    credentials = StaticCredentials(AUTH_ID, AUTH_TOKEN)
 
     client = ClientBuilder(credentials).build_us_autocomplete_api_client()
     print(request.data.decode())
@@ -594,18 +604,17 @@ def suggestaddress():
 
 @application.route("/address_rsp/", methods=["POST", "PUT"])
 def verifyaddress():
-    auth_id =AUTH_ID
-    auth_token = AUTH_TOKEN
-    credentials = StaticCredentials(auth_id, auth_token)
+    body = json.loads(request.data.decode())
+    credentials = StaticCredentials(AUTH_ID, AUTH_TOKEN)
     client = ClientBuilder(credentials).build_us_street_api_client()
 
     lookup = StreetLookup()
-    lookup.addressee = json.loads(request.data.decode())['address']
-    lookup.street = json.loads(request.data.decode())['street']
-    lookup.secondary = json.loads(request.data.decode())['secondary']
-    lookup.city = json.loads(request.data.decode())['city']
-    lookup.state = json.loads(request.data.decode())['state']
-    lookup.zipcode = json.loads(request.data.decode())['zipcode']
+    lookup.addressee = body['address']
+    lookup.street = body['street']
+    lookup.secondary = body['secondary']
+    lookup.city = body['city']
+    lookup.state = body['state']
+    lookup.zipcode = body['zipcode']
     lookup.candidates = 1
 
     try:

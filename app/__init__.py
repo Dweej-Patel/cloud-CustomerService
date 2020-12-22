@@ -2,6 +2,7 @@ from flask import Flask
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_cors import CORS
 from db_config import *
 
 # Create the application server main class instance and call it 'application'
@@ -9,6 +10,8 @@ from db_config import *
 application = Flask(__name__,
                     static_url_path='/static',
                 static_folder='WebSite/static')
+
+CORS(application)
 
 application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 application.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
