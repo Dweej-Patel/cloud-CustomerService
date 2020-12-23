@@ -9,6 +9,12 @@ import socket
 import boto3
 from botocore.config import Config
 
+import os
+
+from smartystreets_python_sdk import StaticCredentials, ClientBuilder
+from smartystreets_python_sdk.us_autocomplete import Lookup as AutocompleteLookup, geolocation_type
+from smartystreets_python_sdk.us_street import Lookup as StreetLookup
+
 my_config = Config(
     region_name = 'us-east-1',
     signature_version = 'v4',
@@ -25,7 +31,7 @@ from app import db
 cwd = os.getcwd()
 sys.path.append(cwd)
 
-from db_config import JWT_KEY, SALT
+from db_config import JWT_KEY, SALT, AUTH_ID, AUTH_TOKEN
 
 print("*** PYHTHONPATH = " + str(sys.path) + "***")
 client = boto3.client('sns', config=my_config)
@@ -446,8 +452,9 @@ def login():
     user = Users.query.filter_by(email=email).first()
     stored_password = user.password
     if hashed_password == stored_password:
-        rsp = Response(json.dumps("", default=str), status=201, content_type="application/json")
         token = encode_token(body['email'], 'user')
+        body.update({"token": str(token.decode())})
+        rsp = Response(json.dumps(body, default=str), status=200, content_type="application/json")
         rsp.headers['token'] = token
         return rsp
     else:
@@ -471,6 +478,18 @@ def loginLandlord():
     else:
         rsp = Response(json.dumps("", default=str), status=401, content_type="application/json")
         return rsp
+
+
+@application.route("/User/getByToken", methods=["POST"])
+def getUserByToken():
+    body = json.loads(request.data.decode())
+    token = body['token']
+    email, role = decode_token(token)
+    user = Users.query.filter_by(email=email).first()
+    if user:
+        return Response(json.dumps(user.to_json(), default=str), status=200, content_type="application/json")
+    return Response(json.dumps("", default=str), status=401, content_type="application/json")
+
 
 
 def hash(password):
@@ -569,3 +588,53 @@ def add_sample_user():
 
 def myfirstmethod(verb, path, path_params, query_params, headers, body):
     pass
+
+
+@application.route("/address-suggest", methods=["POST"])
+def suggestaddress():
+    credentials = StaticCredentials(AUTH_ID, AUTH_TOKEN)
+
+    client = ClientBuilder(credentials).build_us_autocomplete_api_client()
+    streetName = json.loads(request.data.decode())['streetName']
+    print(streetName)
+    try:
+        lookup = AutocompleteLookup(streetName)
+
+        client.send(lookup)
+        resp = []
+        for suggestion in lookup.result:
+            resp.append(suggestion.text)
+        return Response(json.dumps(resp, default=str), status=200, content_type="text/json")
+    except Exception as e:
+        return Response(json.dumps([], default=str), status=200, content_type="text/json")
+
+
+
+@application.route("/address-rsp", methods=["POST", "PUT"])
+def verifyaddress():
+    body = json.loads(request.data.decode())
+    credentials = StaticCredentials(AUTH_ID, AUTH_TOKEN)
+    client = ClientBuilder(credentials).build_us_street_api_client()
+
+    lookup = StreetLookup()
+    #lookup.addressee = body.get('address')
+    lookup.street = body['street']
+    #lookup.secondary = body.get('secondary')
+    lookup.city = body['city']
+    lookup.state = body['state']
+    lookup.zipcode = body['zipcode']
+    lookup.candidates = 1
+
+    try:
+        client.send_lookup(lookup)
+    except Exception.SmartyException as err:
+        print(err)
+        return Response([], status=500)
+
+    result = lookup.result
+
+    if not result:
+        print("No candidates. This means the address is not valid.")
+        return Response(json.dumps(False, default=str), status=404, content_type="text/json")
+    print(result)
+    return Response(json.dumps(True, default=str), status=201, content_type="text/json")

@@ -28,6 +28,16 @@ class Users(db.Model):
     def __repr__(self):
         return f"User: '{self.id}', '{self.first_name}', '{self.last_name}', '{self.email}', '{self.created_date}'"
 
+    def to_json(self):
+        return {
+            "id": self.id,
+            "firstName": self.first_name,
+            "lastName": self.last_name,
+            "landlord_id": self.landlord_id,
+            "email_verification": self.email_verification,
+            "addressId": self.address_id
+        }
+
 
 
 class Requests(db.Model):
