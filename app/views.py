@@ -16,10 +16,9 @@ from smartystreets_python_sdk.us_autocomplete import Lookup as AutocompleteLooku
 from smartystreets_python_sdk.us_street import Lookup as StreetLookup
 
 my_config = Config(
-    region_name = 'us-east-1',
-    signature_version = 'v4',
+    region_name='us-east-1',
+    signature_version='v4',
 )
-
 
 from flask import Response
 from flask import request, jsonify
@@ -332,14 +331,18 @@ def getAddresses(parameter=""):
 @application.route("/Address", methods=["POST"])
 def addAddresses():
     body = json.loads(request.data.decode())
-    names = [x for x, y in body.items()]
-    values = [y for x, y in body.items()]
-    values = '", "'.join(map(str, values))
-    names = ', '.join(map(str, names))
-    sql = f'INSERT INTO CustomerService.addresses ({names}) values ("{values}");'
-    print(sql)
-    msg = dbsvc.getDbConnection(sql)
-    print(msg)
+    try:
+        address = Addresses(streetAddress=body['streetName'], city=body['city'], state=body['state'],
+                            postalCode=body['zipcode'])
+        db.session.add(address)
+        db.session.commit()
+    except Exception as e:
+        print("Sorry DB error: ", e)
+        rsp = Response("Error on add address", status=401, content_type="text/plain")
+        return rsp
+    rsp = Response("Address added", status=201, content_type="text/plain")
+    return rsp
+
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
     return rsp
@@ -348,9 +351,7 @@ def addAddresses():
 @application.route("/Address/id/<id>", methods=["DELETE"])
 def deleteAddress(id):
     sql = f'DELETE from CustomerService.addresses WHERE id={id};'
-    print(sql)
     msg = dbsvc.getDbConnection(sql)
-    print(msg)
     rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
 
     return rsp
@@ -410,6 +411,7 @@ def activateLandlord():
     print(msg)
     return Response("Success", status=200)
 
+
 @application.route("/Active-user", methods=["POST"])
 def activateUser():
     body = json.loads(request.data.decode())
@@ -438,9 +440,6 @@ def registerLandlord():
     token = encode_token(body['email'], 'Landlord')
     rsp.headers['token'] = token
     return rsp
-
-
-
 
 
 @application.route("/Login", methods=["POST"])
@@ -489,7 +488,6 @@ def getUserByToken():
     if user:
         return Response(json.dumps(user.to_json(), default=str), status=200, content_type="application/json")
     return Response(json.dumps("", default=str), status=401, content_type="application/json")
-
 
 
 def hash(password):
@@ -609,7 +607,6 @@ def suggestaddress():
         return Response(json.dumps([], default=str), status=200, content_type="text/json")
 
 
-
 @application.route("/address-rsp", methods=["POST", "PUT"])
 def verifyaddress():
     body = json.loads(request.data.decode())
@@ -617,9 +614,9 @@ def verifyaddress():
     client = ClientBuilder(credentials).build_us_street_api_client()
 
     lookup = StreetLookup()
-    #lookup.addressee = body.get('address')
+    # lookup.addressee = body.get('address')
     lookup.street = body['street']
-    #lookup.secondary = body.get('secondary')
+    # lookup.secondary = body.get('secondary')
     lookup.city = body['city']
     lookup.state = body['state']
     lookup.zipcode = body['zipcode']
@@ -631,10 +628,17 @@ def verifyaddress():
         print(err)
         return Response([], status=500)
 
-    result = lookup.result
+    results = lookup.result
+    if not results:
+        return Response(json.dumps(False, default=str), status=200, content_type="text/json")
+    first_candidate = results[0]
+    # city_name, state_abbreviation, zipcode
 
-    if not result:
+    if not first_candidate or (first_candidate.delivery_line_1 != body['street'] or
+                               first_candidate.components.city_name != body['city'] or
+                               first_candidate.components.state_abbreviation != body['state']
+                               or first_candidate.components.zipcode != body['zipcode']):
         print("No candidates. This means the address is not valid.")
-        return Response(json.dumps(False, default=str), status=404, content_type="text/json")
-    print(result)
-    return Response(json.dumps(True, default=str), status=201, content_type="text/json")
+        return Response(json.dumps(False, default=str), status=200, content_type="text/json")
+
+    return Response(json.dumps(True, default=str), status=200, content_type="text/json")
