@@ -236,19 +236,70 @@ def demo(parameter):
     rsp = Response(json.dumps(msg), status=200, content_type="application/json")
     return rsp
 
+@application.route("/requests", methods=["GET"])
+def getRequests():
+    info = request.args.get('user_id')
+    res = Requests.query.filter_by(user_id=info)
+    allRes = []
+    for r in res:
+        allRes.append(
+            {
+                "id":r.id,
+                "subject":r.subject,
+                "type":str(r.type),
+                "message":r.message,
+                "user_id":r.user_id
+            }
+        )
+    return jsonify(result=allRes)
 
-@application.route("/Users", methods=["GET"])
-@application.route("/Users/<parameter>", methods=["GET"])
-def getUsers(parameter=""):
-    if parameter:
-        sql = f"SELECT * from CustomerService.users LIMIT {parameter};"
-    else:
-        sql = f"SELECT * from CustomerService.users;"
-    msg = dbsvc.getDbConnection(sql)
-    print(msg)
-    rsp = Response(json.dumps(msg, default=str), status=200, content_type="application/json")
+@application.route("/requests", methods=["POST"])
+def putRequests():
+    try:
+        r = Requests(id=request.form['id'], message=request.form['message'], subject=request.form['subject'],
+                       user_id=request.form['user_id'], type=request.form['type'])
+        db.session.add(r)
+        db.session.commit()
+    except Exception as e:
+        print('DB Error: ', e)
+        return jsonify(status="failure")
+        return rsp
 
-    return rsp
+    return jsonify(request=str(r), status="success")
+
+@application.route("/Users/", methods=["GET"])
+@application.route("/Users/id/<id>", methods=["GET"])
+def getUsers(id=""):
+    if id:
+        user = Users.query.get(id)
+        if user:
+            return jsonify(
+                id=user.id,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                landlord_id=user.landlord_id,
+                address_id=user.address_id,
+                links=[{"rel":"requests", "href": "/requests?user_id="+id}]
+            )
+        else:
+            return jsonify(result="user does not exist")
+
+    user = Users.query.all()
+    allUsers = []
+    for u in user:
+        allUsers.append(
+            {
+                "id":u.id,
+                "first_name":u.first_name,
+                "last_name":u.last_name,
+                "email":u.email,
+                "landlord_id":u.landlord_id,
+                "address_id": u.address_id,
+                "links": [{"rel": "requests", "href": "/requests?user_id=" + str(u.id)}]
+            }
+        )
+    return jsonify(result=allUsers)
 
 
 @application.route("/Users", methods=["POST"])
